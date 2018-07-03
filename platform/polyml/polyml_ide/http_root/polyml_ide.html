@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="js/CodeMirror/lib/codemirror.js"></script>
+    <script src="js/CodeMirror/addon/scroll/annotatescrollbar.js"></script>
+    <script src="js/CodeMirror/addon/search/matchesonscrollbar.js"></script>
+    <script src="js/CodeMirror/addon/search/searchcursor.js"></script>
+    <!-- <script src="js/CodeMirror/addon/search/match-highlighter.js"></script> <!-- highlight all instances of the current word -->
+    <script src="js/CodeMirror/addon/dialog/dialog.js"></script>
+    <script src="js/CodeMirror/addon/edit/trailingspace.js"></script>
+    <script src="js/CodeMirror/addon/edit/matchbrackets.js"></script>
+    <script src="js/CodeMirror/addon/search/searchcursor.js"></script>
+    <script src="js/CodeMirror/addon/search/search.js"></script>
+    <script src="js/CodeMirror/addon/search/jump-to-line.js"></script>
+    <script src="js/CodeMirror/addon/display/panel.js"></script> <!-- status line at the bottom -->
+    <script src="js/CodeMirror/mode/mllike/mllike.js"></script>
+    <script src="js/CodeMirror/keymap/emacs.js"></script> <!-- FIXME order matters? Surprise! -->
+    <script src="js/logger.js"></script>
+    <script src="js/polyml_ide.js"></script>
+    <link rel="stylesheet" href="js/CodeMirror/lib/codemirror.css">
+    <link rel="stylesheet" href="js/CodeMirror/addon/dialog/dialog.css">
+    <link rel="stylesheet" href="js/CodeMirror/addon/search/matchesonscrollbar.css">
+    <link rel="stylesheet" href="css/polyml_ide.css">
+    <link rel="icon" href="img/Poly_Parrot3.gif"><!-- FIXME resize, format?, alpha background -->
+    <title>Poly/ML interaction</title>
+  </head>
+
+  <body>
+    <div class="row">
+      <div class="col">
+        <h1>Poly/ML</h1>
+        <textarea id="code" placeholder="Type some Standard ML code here..." autofocus></textarea>
+        <div class="buttons">
+          <button id="compile" type="button" disabled="true" class="compile_quiescent">C-c: compile</button>
+          <button id="compile_kill" type="button" disabled="true" class="compile_kill_quiescent">Kill compilation</button>
+          <button id="clear_playground" type="button" class="clear_playground">Clear playground</button>
+        </div>
+      </div>
+      <div class="col">
+        <h1>Playground</h1>
+        <!-- This iframe is mostly so we can nuke what's in there. -->
+        <iframe sandbox="allow-scripts" id="playground" class="playground"></iframe>
+      </div>
+    </div>
+
+    <script>
+      dostuff(); // polyide
+    </script>
+
+  </body>
+</html>

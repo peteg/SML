@@ -1,0 +1,33 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+in
+  error.sig
+  error.sml
+
+  exn0.sml
+
+  outstream0.sml
+
+  layout.sig
+  layout.sml
+
+  t.sig
+
+  exn.sig
+  exn.sml
+  outstream.sig
+  outstream.sml
+
+  dot-color.sml
+  dot.sig
+  dot.sml
+
+  fold.sig
+  fold.fun
+
+  list.sig
+  list.sml
+
+  ref.sig
+  ref.sml
+end

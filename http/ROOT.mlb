@@ -1,0 +1,16 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/smlnj-lib/Util/smlnj-lib.mlb
+  ../platform/ROOT-mlton.mlb
+  ../basis/ROOT.mlb
+in
+  uri.sml
+  mime.sml
+  html.sml
+  http_codes.sml
+  http.sml
+  http_server.sml
+  http_handlers.sml
+  http_websockets.sml
+  test.sml
+end

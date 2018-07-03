@@ -1,0 +1,2 @@
+Skeleton 5
+ad"HTML4Parser"h7aä¢H4"gp1d"HTML4"aä¢H4U"gp1d"HTML4Utils"Caä¢H4T"gp1d"HTML4Tokens"aä¢H4TU"gp1d"HTML4TokenUtils"aä¢AtomMap"gp2ÿÿ0baä¢TheParser"jgp1ä¢HTML4Lexer"gp1e"HTML4ParseFn"egp1ÿ‚f8ÿÿ;ÿ#Cd"Atom"d"Char"ÿd"Option"d"String"Cd"TextIO"d"CharVector"d"AntlrStreamPos"ÿ0ÿ‚NN

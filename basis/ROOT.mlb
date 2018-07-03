@@ -1,0 +1,27 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/smlnj-lib/Util/smlnj-lib.mlb
+  ../platform/ROOT-mlton.mlb
+in
+  infixes.sml
+  fn.sml
+  basis.sml
+  exn.ML
+  basics.ML
+  library.ML
+  sha1.ML
+  socket_io.ML
+  base64.sml
+  ann "nonexhaustiveMatch ignore" in table.ML end (* FIXME use smlnj-lib instead? *)
+  scan.ML
+  alist.sml
+  log.sml
+  generic-server.sml
+  susp.sml
+  coseq.sml
+  ann "allowSigWithtype true" in json.sml end
+  radix-trie.sml
+  file-sys.sml
+  state-monad.sml
+  fifo-channel.sml
+end

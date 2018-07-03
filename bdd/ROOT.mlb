@@ -1,0 +1,10 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/smlnj-lib/Util/smlnj-lib.mlb
+  ../platform/ROOT-mlton.mlb
+  ../mlton-lib-basic/ROOT.mlb (* FIXME would be nice to use the one in the mlton distro *)
+in
+  hashing.sml
+  weak-hash-table.sml
+  bdd.sml
+end
