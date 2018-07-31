@@ -5,7 +5,7 @@ MLTON_FLAGS := -const 'Exn.keepHistory true'
 
 POLY := $(HOME)/src/repos/polyml/poly
 
-.PHONY: poly ROOT
+.PHONY: clean poly ROOT
 
 ROOT:
 	$(MLTON) $(MLTON_FLAGS) ROOT.mlb

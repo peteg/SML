@@ -1,3 +1,4 @@
+use "../platform.sig";
 use "poly_threads.sml";
 use "poly_smlnj-lib.sml";
 

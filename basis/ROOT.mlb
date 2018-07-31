@@ -24,4 +24,5 @@ in
   file-sys.sml
   state-monad.sml
   fifo-channel.sml
+  time-with-offset.sml
 end

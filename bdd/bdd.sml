@@ -35,6 +35,7 @@ sig
   val or: man * t * t -> t
   val nand: man * t * t -> t
   val implies: man * t * t -> t
+  val ite: man * t * t * t -> t
   val xor: man * t * t -> t
   val eq: man * t * t -> t
   val nxor: man * t * t -> t
@@ -44,13 +45,15 @@ sig
 
   val exists: man * support * t -> t
 
+  val permute: man * (var -> var) * t -> t
+
   datatype 'a view
     = False
     | True
     | If of {var: var, edge0: 'a, edge1: 'a}
 
   val fold: man * ('a view * 'b -> 'a * 'b) * 'b * t -> 'a * 'b
-  val view: t -> t view
+  val view: t -> t view (* FIXME perhaps want something that exposes the sharing *)
 end
 
 structure Bdd_impl :> BDD_IMPL =
@@ -125,7 +128,7 @@ fun new (size: int) : man =
     , and_hc = AndHashCons.new size
     }
 
-fun cif (man: man, var: var, t0: t, t1: t) : t =
+fun if_ (man: man, var: var, t0: t, t1: t) : t =
     let
       (* Normalize FIXME diagram *)
       val polarity = #polarity t0
@@ -157,7 +160,7 @@ fun cif (man: man, var: var, t0: t, t1: t) : t =
     end
 
 fun var (man: man, v: var) : t =
-    cif (man, v, tt, ff)
+    if_ (man, v, tt, ff)
 
 (* FIXME needs more scrute *)
 fun and_ ( man: man
@@ -185,9 +188,9 @@ fun and_ ( man: man
                     val (e10, e11) = norm (r1, polarity1)
                     val t =
                         case Int.compare (#var r0, #var r1) of
-                            LESS    => cif (man, #var r0, and_ (man, e00, e1),  and_ (man, e01, e1))
-                          | EQUAL   => cif (man, #var r0, and_ (man, e00, e10), and_ (man, e01, e11))
-                          | GREATER => cif (man, #var r1, and_ (man, e10, e0),  and_ (man, e11, e0))
+                            LESS    => if_ (man, #var r0, and_ (man, e00, e1),  and_ (man, e01, e1))
+                          | EQUAL   => if_ (man, #var r0, and_ (man, e00, e10), and_ (man, e01, e11))
+                          | GREATER => if_ (man, #var r1, and_ (man, e10, e0),  and_ (man, e11, e0))
                   in
                     AndHashCons.update (#and_hc man, key, t)
                   ; t
@@ -198,6 +201,7 @@ fun and_ ( man: man
 fun or (man, e0, e1) = not_ (and_ (man, not_ e0, not_ e1))
 fun nand (man, e0, e1) = not_ (and_ (man, e0, e1))
 fun implies (man, e0, e1) = or (man, not_ e0, e1)
+fun ite (man, i, t, e) = and_ (man, implies (man, i, t), implies (man, not_ i, e))
 fun xor (man, e0, e1) = and_ (man, or (man, e0, e1), nand (man, e0, e1)) (* FIXME sufficiently horrible to justify a special treatment of xor? *)
 fun eq (man, e0, e1) = not_ (xor (man, e0, e1))
 val nxor = eq (* FIXME xnor? *)
@@ -261,7 +265,7 @@ fun exists (man: man, support: support, t: t) : t =
                             let
                               val (t0, t1) = norm (r, polarity)
                             in
-                              cif (man, #var r, go (vvs, t0), go (vvs, t1))
+                              if_ (man, #var r, go (vvs, t0), go (vvs, t1))
                             end
                   in
                     CVisited.update (visited, (#code r, polarity), t)
@@ -315,6 +319,19 @@ fun view (t: t) : t view =
           If {var = #var r, edge0 = e0, edge1 = e1}
         end
 
+(* Permute variables using `f`. FIXME still safe if it's not a permutation. Check this is fast for renaming adjacement variables. *)
+
+fun permute (man: man, f: var -> var, t: t) : t =
+    let
+      val go : t view * unit -> t * unit =
+       fn (False, _) => (ff, ())
+        | (True, _) => (tt, ())
+        | (If {var, edge0, edge1}, _) =>
+          (if_ (man, f var, edge0, edge1), ())
+    in
+      #1 (fold (man, go, (), t))
+    end
+
 end
 
 structure Bdd_ext =
@@ -324,12 +341,12 @@ local
   structure Bdd = Bdd_impl
 in
 
-fun toDot (man: Bdd.man, t: Bdd.t) : Layout.t =
+fun toDot (man: Bdd.man, fmtVar: Bdd.var -> string, t: Bdd.t) : Layout.t =
     let
       val graphOptions = [Dot.GraphOption.RankDir Dot.TopToBottom]
       val leafOptions = [Dot.NodeOption.Shape Dot.Box]
       fun varOptions var = [ Dot.NodeOption.Shape Dot.Circle
-                           , Dot.NodeOption.Label [(Int.toString var, Dot.Center)] ]
+                           , Dot.NodeOption.Label [(fmtVar var, Dot.Center)] ]
       fun return (x, (i, s)) = (#name x, (i + 1, x :: s))
       val go : string Bdd.view * (int * Dot.node list) -> string * (int * Dot.node list) =
        fn (Bdd.False, s) => return ({name = "L", options = leafOptions, successors = []}, s)
@@ -350,73 +367,70 @@ end
 
 end
 
-(* Convenient, safe calculator-style API.
-   Global manager. *)
+(*
+A convenient and safe calculator-style API (global manager).
+Designed to be used as `open Bdd`.
+*)
 structure Bdd =
 struct
 
 local
-  structure Bdd = Bdd_impl
 
-  type man = Bdd.man
-  type t = Bdd.t
+  type man = Bdd_impl.man
 
-  val man: man = Bdd.new 100
+  val man: man = Bdd_impl.new 100
 
 in
 
-type var = Bdd.var
+structure BDD =
+struct
 
-val compare: t * t -> General.order = Bdd.compare
+type var = Bdd_impl.var
+datatype view = datatype Bdd_impl.view
+type support = Bdd_impl.support
+type t = Bdd_impl.t
 
-val ff : t = Bdd.ff
-val tt : t = Bdd.tt
+val compare = Bdd_impl.compare
 
-fun is_ff (t: t) : bool = Bdd.compare (t, Bdd.ff) = EQUAL
-fun is_tt (t: t) : bool = Bdd.compare (t, Bdd.tt) = EQUAL
+fun var (v: var) : t = Bdd_impl.var (man, v)
 
-fun var (v: var) : t = Bdd.var (man, v)
+end
 
-val not : t -> t = Bdd.not_
-fun op && (t0: t, t1: t) : t = Bdd.and_ (man, t0, t1)
-fun op || (t0: t, t1: t) : t = Bdd.or (man, t0, t1)
-fun nand (t0: t, t1: t) : t = Bdd.nand (man, t0, t1)
-fun implies (t0: t, t1: t) : t = Bdd.implies (man, t0, t1)
-fun xor (t0: t, t1: t) : t = Bdd.xor (man, t0, t1)
-fun eq (t0: t, t1: t) : t = Bdd.eq (man, t0, t1)
-fun nxor (t0: t, t1: t) : t = Bdd.nxor (man, t0, t1)
+val ff : BDD.t = Bdd_impl.ff
+val tt : BDD.t = Bdd_impl.tt
 
-type support = Bdd.support
+fun is_ff (t: BDD.t) : bool = Bdd_impl.compare (t, Bdd_impl.ff) = EQUAL
+fun is_tt (t: BDD.t) : bool = Bdd_impl.compare (t, Bdd_impl.tt) = EQUAL
 
-fun support (t: t) : support = Bdd.support (man, t)
+val not : BDD.t -> BDD.t = Bdd_impl.not_
+fun op /\  (t0, t1) : BDD.t = Bdd_impl.and_    (man, t0, t1)
+fun op \/  (t0, t1) : BDD.t = Bdd_impl.or      (man, t0, t1)
+fun nand   (t0, t1) : BDD.t = Bdd_impl.nand    (man, t0, t1)
+fun op --> (t0, t1) : BDD.t = Bdd_impl.implies (man, t0, t1)
+fun ite    (t0, t1, t2) : BDD.t = Bdd_impl.ite (man, t0, t1, t2)
+fun xor    (t0, t1) : BDD.t = Bdd_impl.xor     (man, t0, t1)
+fun op ==  (t0, t1) : BDD.t = Bdd_impl.eq      (man, t0, t1)
+fun nxor   (t0, t1) : BDD.t = Bdd_impl.nxor    (man, t0, t1)
 
-fun exists (support: support, t: t) : t =
-    Bdd.exists (man, support, t)
+val conjoin : BDD.t list -> BDD.t =
+  List.foldl (op /\) tt
 
-datatype view = datatype Bdd.view
+val disjoin : BDD.t list -> BDD.t =
+  List.foldl (op \/) ff
 
-fun fold (f: 'a view * 'b -> 'a * 'b, s: 'b, t: t) : 'a * 'b =
-    Bdd.fold (man, f, s, t)
+fun support (t: BDD.t) : BDD.support = Bdd_impl.support (man, t)
 
-val view: t -> t view = Bdd.view
+fun exists (support: BDD.support, t) : BDD.t =
+    Bdd_impl.exists (man, support, t)
 
-fun toDot (t: t): Layout.t = Bdd_ext.toDot (man, t)
+fun fold (f: 'a BDD.view * 'b -> 'a * 'b, s: 'b, t: BDD.t) : 'a * 'b =
+    Bdd_impl.fold (man, f, s, t)
+
+val view: BDD.t -> BDD.t BDD.view = Bdd_impl.view
+
+fun toDot (fmtVar: BDD.var -> string, t: BDD.t): Layout.t =
+    Bdd_ext.toDot (man, fmtVar, t)
 
 end
 
 end
-
-(*
-(* FIXME test code *)
-open Bdd;
-
-val a = var 0;
-val b = var 1;
-val c = var 2;
-
-val bdd = xor (a, b);
-
-val l = toDot bdd;
-Layout.print (l, print);
-print "\n";
-*)

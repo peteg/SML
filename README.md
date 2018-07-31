@@ -1,7 +1,7 @@
 Assorted Standard ML
 --------------------
 
-Extract from various places.
+Extracted from various places.
 
 Lightly tested on Poly/ML and mlton.
 
@@ -13,7 +13,7 @@ domain as specified by `LICENSE`.
 TODO
 ~~~~
 
-- put Poly/ML multithreading back on its feet
-- smlnj-lib/Util/scan.sml conflicts with basis/scan.ML
-- get `http_server` to attach the right MIME type by default
-- check `cleanup` in `http_server`: mlton objects to closing those streams.
+* put Poly/ML multithreading back on its feet
+* smlnj-lib/Util/scan.sml conflicts with basis/scan.ML
+* get `http_server` to attach the right MIME type by default
+* check `cleanup` in `http_server`: mlton objects to closing those streams

@@ -420,11 +420,15 @@ fun output b stream = List.app (fn s => BinIO.output (stream, Byte.stringToBytes
 
 end
 
+(* FIXME top-level namespace pollution *)
+
 (* http://stackoverflow.com/questions/11276985/emulating-try-with-finally-in-ocaml *)
 (* FIXME look into the mltonlib extended basis. *)
-fun unwind protect x f =
-    let val res = Sum.INL (f x) handle e => Sum.INR e
-        val ()  = ignore (protect x)
+(* Observe: CBV means x is not `protect`ed. Which is what we probably want for file ops. *)
+fun unwind (protect: 'a -> 'b) (x: 'a) (f: 'a -> 'c) : 'c =
+    let
+      val res = Sum.INL (f x) handle e => Sum.INR e
+      val ()  = ignore (protect x)
     in
       case res of
           Sum.INL y => y
@@ -433,23 +437,29 @@ fun unwind protect x f =
 
 (* FIXME presumably inefficient. Could make it safer by providing a limit. *)
 fun read_line (in_stream : BinIO.instream) : string option =
-    let fun finalize (cs : char list) : string option =
-            if List.null cs
-            then NONE
-            else SOME (String.implode (List.rev cs))
-        fun aux (cs : char list) : string option =
-            case BinIO.input1 in_stream of
-                NONE => finalize cs
-              | SOME 0w10 => finalize cs
-              | SOME b => aux (Byte.byteToChar b :: cs)
+    let
+      fun finalize (cs : char list) : string option =
+          if List.null cs
+          then NONE
+          else SOME (String.implode (List.rev cs))
+      fun aux (cs : char list) : string option =
+          case BinIO.input1 in_stream of
+              NONE => finalize cs
+            | SOME 0w10 => finalize cs
+            | SOME b => aux (Byte.byteToChar b :: cs)
     in
       aux []
     end
 
-fun contents (filename : filename) : string =
-  unwind BinIO.closeIn
-         (BinIO.openIn filename)
-         (Byte.bytesToString o BinIO.inputAll)
+fun contents (filename: filename) : string =
+    unwind BinIO.closeIn
+           (BinIO.openIn filename)
+           (Byte.bytesToString o BinIO.inputAll)
+
+fun writeFile (filename: filename) (contents: string) : unit =
+    unwind BinIO.closeOut
+           (BinIO.openOut filename)
+           (fn stream => BinIO.output (stream, Byte.stringToBytes contents))
 
 (* FIXME move. Strip whitespace at start and end too. Not TRC. *)
 fun normalize str =

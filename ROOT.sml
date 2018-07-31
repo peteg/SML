@@ -1,5 +1,4 @@
 (* Build script of sorts of Poly/ML *)
-use "platform/platform.sig";
 use "platform/polyml/platform.sml";
 
 use "basis/ROOT.sml";
